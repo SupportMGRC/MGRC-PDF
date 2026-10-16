@@ -1,0 +1,6 @@
+MGRC-PDF app icon (pdfcraft.svg, pdfcraft-small.svg and every file derived from them in this
+directory: pdfcraft-1024.png, pdfcraft.icns, pdfcraft.ico, hicolor/).
+
+These files are rendered from the MGRC mark (docs/brand/mgrc-mark.svg), a trademark of Malaysian
+Genomics Resource Centre Berhad. They are not open source; the terms in docs/brand/LICENSE-brand.txt
+apply. The document icon (pdfcraft-document.*) is covered separately by LICENSE-document.txt.

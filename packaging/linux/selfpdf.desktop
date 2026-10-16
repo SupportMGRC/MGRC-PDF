@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=MGRC-PDF
+GenericName=PDF Editor
+Comment=Read, organize, combine, split and secure PDFs
+Exec=selfpdf %U
+TryExec=selfpdf
+Icon=selfpdf
+Terminal=false
+StartupNotify=true
+StartupWMClass=selfpdf
+Categories=Office;Viewer;
+Keywords=pdf;viewer;editor;annotate;sign;forms;merge;split;
+MimeType=application/pdf;

@@ -1,0 +1,11 @@
+MGRC brand assets: license
+
+The MGRC name, the "Malaysian Genomics Resource Centre" logo and the MGRC mark (the "MGRC Marks"),
+including every file named mgrc-* in this directory and the app icons in assets/app-icon/ that are
+rendered from the MGRC mark, are owned by Malaysian Genomics Resource Centre Berhad. They are
+trademarks and are NOT open source. They are not covered by the MIT OR Apache-2.0 license of the
+source code, and nothing in that license, in NOTICE or in any other file of this repository grants
+any right to them.
+
+They may be used only within MGRC-PDF builds made by or for Malaysian Genomics Resource Centre
+Berhad. Anyone else who redistributes or modifies this repository must remove them.

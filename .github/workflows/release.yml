@@ -1,0 +1,57 @@
+name: Release (MGRC Windows)
+
+# Builds the MGRC-PDF Windows installer (selfpdf-<version>-windows-x64.msi) and portable zip.
+#   - Actions ▸ "Release (MGRC Windows)" ▸ Run workflow  → test build; download from the run's Artifacts.
+#   - Push a tag such as v0.8.0                          → same build, attached to a GitHub Release.
+# The version comes from [workspace.package] version in Cargo.toml (cargo xtask version set X.Y.Z).
+# Installers are unsigned unless the WINDOWS_CERTIFICATE / WINDOWS_CERTIFICATE_PASSWORD secrets are
+# set (packaging/windows/sign.ps1); unsigned MSIs show a SmartScreen warning when run by hand.
+# The upstream PdfCraft pipeline is kept as release-upstream.yml.disabled for reference.
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup target add x86_64-pc-windows-msvc
+
+      - name: WiX v5
+        run: dotnet tool install --global wix --version 5.0.2
+
+      - name: Build and package (MSI + portable zip)
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: pwsh packaging/windows/package.ps1 -Arch x64
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: selfpdf-windows-x64
+          path: |
+            dist/release/*.msi
+            dist/release/*.zip
+
+      - name: Publish GitHub Release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: MGRC-PDF ${{ github.ref_name }}
+          files: |
+            dist/release/*.msi
+            dist/release/*.zip
