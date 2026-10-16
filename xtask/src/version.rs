@@ -15,9 +15,12 @@ pub fn read(manifest: &str) -> Result<String, String> {
     Ok(v)
 }
 
-/// `manifest` with the workspace version replaced; everything else is byte-for-byte unchanged.
+/// `manifest` with the workspace version replaced, together with the `version = "…"` of the
+/// workspace's own path dependencies (`{ path = "crates/…", version = "…" }`), which must match it
+/// or Cargo can't resolve the workspace. Everything else is byte-for-byte unchanged.
 pub fn replace(manifest: &str, new: &str) -> Result<String, String> {
     validate(new)?;
+    let old = read(manifest)?;
     let (idx, _) = find_line(manifest)?;
     let mut out = String::with_capacity(manifest.len() + 8);
     for (i, line) in manifest.split_inclusive('\n').enumerate() {
@@ -30,11 +33,18 @@ pub fn replace(manifest: &str, new: &str) -> Result<String, String> {
                 ""
             };
             out.push_str(&format!("version = \"{new}\"{eol}"));
+        } else if is_member_dependency(line) {
+            out.push_str(&line.replacen(&format!("version = \"{old}\""), &format!("version = \"{new}\""), 1));
         } else {
             out.push_str(line);
         }
     }
     Ok(out)
+}
+
+/// A `[workspace.dependencies]` line naming one of the workspace's own crates by path.
+fn is_member_dependency(line: &str) -> bool {
+    line.contains("path = \"crates/") || line.contains("path = \"apps/")
 }
 
 /// Semver without build metadata: `MAJOR.MINOR.PATCH` plus an optional `-pre.release` tag.
@@ -129,6 +139,16 @@ mod tests {
         assert_eq!(read(&out).unwrap(), "1.2.3-rc.1");
         assert_eq!(out, MANIFEST.replace("version = \"0.1.0\"", "version = \"1.2.3-rc.1\""));
         assert!(out.contains("foo = { version = \"1\" }"));
+    }
+
+    #[test]
+    fn moves_the_workspace_crates_dependency_versions_with_it() {
+        let manifest = "[workspace.package]\nversion = \"0.8.0\"\n\n[workspace.dependencies]\na = { path = \"crates/a\", version = \"0.8.0\" }\nb = { path = \"apps/b\", version = \"0.8.0\" }\nc = { version = \"0.8.0\" }\n";
+        let out = replace(manifest, "0.1.0").unwrap();
+        assert!(out.contains("a = { path = \"crates/a\", version = \"0.1.0\" }"));
+        assert!(out.contains("b = { path = \"apps/b\", version = \"0.1.0\" }"));
+        assert!(out.contains("c = { version = \"0.8.0\" }"), "outside crates keep their own version");
+        assert_eq!(read(&out).unwrap(), "0.1.0");
     }
 
     #[test]
