@@ -31,7 +31,7 @@
 MGRC-PDF is MGRC's in-house PDF application for staff. It runs entirely on the user's own
 computer: documents are never uploaded anywhere, and nothing is sent back to MGRC or anyone else.
 
-MGRC-PDF is open source, based on [PdfCraft](https://github.com/storytold/pdfcraft).
+MGRC-PDF is open source based project.
 
 | | |
 |---|---|
