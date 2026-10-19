@@ -1,6 +1,6 @@
 //! Windows only: embed version info (VERSIONINFO) into `selfpdf-cli.exe`, so Explorer's
 //! Details tab, `(Get-Item selfpdf-cli.exe).VersionInfo` and inventory tools can read the version
-//! and publisher, as they can for `pdfcraft.exe` (`apps/pdfcraft/build.rs`).
+//! and publisher, as they can for `selfpdf.exe` (`apps/pdfcraft/build.rs`).
 //!
 //! On every other target this does nothing. A missing resource compiler is a warning, so a
 //! cross-compile from macOS or Linux still links, unless `PDFCRAFT_REQUIRE_WINRES=1` turns it

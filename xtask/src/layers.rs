@@ -112,6 +112,10 @@ pub const UI_CRATES: &[&str] = &["egui", "eframe", "winit", "egui_kittest", "cra
 pub const UI_MIN_LAYER: u8 = 7;
 
 pub fn short_name(pkg: &str) -> &str {
+    // The command-line tool's package is `selfpdf-cli` (MGRC-PDF's program name); it is the `cli` app.
+    if pkg == "selfpdf-cli" {
+        return "cli";
+    }
     pkg.strip_prefix("pdfcraft-").unwrap_or(pkg)
 }
 

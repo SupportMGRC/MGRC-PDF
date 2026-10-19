@@ -1,4 +1,4 @@
-//! Links: the Help menu and About dialog open the upstream ArtCraft and PdfCraft pages (no Discord). Home and About show the MGRC logo.
+//! Links: the Help menu and About dialog open MGRC-PDF's GitHub page (no Discord). Home and About show the MGRC logo.
 
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
@@ -34,9 +34,9 @@ fn about_dialog_shows_the_brand_and_links() {
     h.get_by_label("MGRC");
     h.get_by_label("Malaysian Genomics Resource Centre");
     assert!(h.query_by_label("Discord").is_none() && h.query_by_label("Join our Discord").is_none(), "no Discord link");
-    h.get_by_label("PdfCraft web page").click();
+    h.get_by_label("MGRC-PDF on GitHub").click();
     h.run_steps(2);
-    assert_eq!(h.state().last_opened_url.as_deref(), Some(links::APP_PAGE));
+    assert_eq!(h.state().last_opened_url.as_deref(), Some(links::GITHUB));
 }
 
 #[test]
@@ -73,12 +73,8 @@ fn settled<'a>(h: &'a mut Harness<'static, PdfCraftApp>, label: &'a str) -> egui
 fn about_dialog_has_contributors_and_models_tabs() {
     let mut h = harness(|app| app.dialog = Some(Dialog::About));
     settled(&mut h, "Contributors").click();
-    // The owner is always in the compiled-in credits (contributors/contributors.json), shown by username.
-    settled(&mut h, "@echelon");
-    settled(&mut h, "Table").click();
-    settled(&mut h, "PRs");
-    settled(&mut h, "Display name").click();
-    settled(&mut h, "Brandon Thomas");
+    // MGRC-PDF builds without a contributor list (`contributors/` is not shipped): the tab says so.
+    settled(&mut h, "No contributor data was built into this copy.");
     settled(&mut h, "Models").click();
     h.run_steps(4);
     assert!(h.query_all_by_label("Anthropic").count() >= 1);
