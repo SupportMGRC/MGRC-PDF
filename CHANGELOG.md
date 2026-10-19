@@ -2,7 +2,7 @@
 
 All notable changes to MGRC-PDF are listed here. Versions follow MAJOR.MINOR.PATCH.
 
-## [Unreleased]
+## [0.2.1] - 2026-10-19
 
 ### Fixed
 - Printing no longer closes MGRC-PDF when the printer driver crashes (seen on the RICOH IM C2010

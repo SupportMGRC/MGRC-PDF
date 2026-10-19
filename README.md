@@ -142,16 +142,40 @@ Needs Rust 1.95 or later (`rustup`, MSVC toolchain on Windows).
 ```sh
 git clone https://github.com/SupportMGRC/MGRC-PDF.git
 cd MGRC-PDF
-cargo xtask models                          # OCR models used by Scan & OCR
-cargo run --release -p pdfcraft -- some.pdf # the desktop app (builds selfpdf)
-cargo run --release -p selfpdf-cli -- --help
+cargo xtask models                          # once: OCR models used by Scan & OCR
 ```
 
-Before committing, run the checks in [CLAUDE.md](CLAUDE.md#quality-checks).
+### Test while coding (like `localhost`)
+
+```sh
+cargo run -p pdfcraft                       # build a test version and open the app
+cargo run -p pdfcraft -- some.pdf           # same, opening a PDF
+cargo run -p selfpdf-cli -- --help          # the command-line tool
+```
+
+Quick to build, a little slower to run. Use it to check your changes while you work. There is no
+auto-reload: close the app and run the command again after each change.
+
+### Build what users get
+
+```sh
+cargo build --release -p pdfcraft
+```
+
+Builds the fast, final version into `target\release\selfpdf.exe`, the same kind of program the
+installer ships. Slower to build. Use it to test exactly what staff will see before a release. This
+only builds the program on your PC; the installer that staff download is made as described in
+[Releasing](#releasing).
+
+### Before committing
+
+Run the checks in [CLAUDE.md](CLAUDE.md#quality-checks).
+
+### Code layout
 
 The code is a Cargo workspace. The engine (parsing, rendering, editing) lives in library crates under
-`crates/`; the desktop interface is `crates/ui-egui`; the programs are `apps/pdfcraft` (`selfpdf`)
-and `apps/pdfcraft-cli` (`selfpdf-cli`). See [docs/architecture.md](docs/architecture.md).
+`crates/`; the desktop interface is `crates/ui-egui`; the two programs, `selfpdf` and `selfpdf-cli`,
+are under `apps/`. See [docs/architecture.md](docs/architecture.md).
 
 ## Releasing
 
