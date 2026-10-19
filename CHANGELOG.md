@@ -2,6 +2,13 @@
 
 All notable changes to MGRC-PDF are listed here. Versions follow MAJOR.MINOR.PATCH.
 
+## [Unreleased]
+
+### Fixed
+- Printing no longer closes MGRC-PDF when the printer driver crashes (seen on the RICOH IM C2010
+  with the Microsoft IPP Class Driver). Print jobs on Windows now run in a separate helper process;
+  if the driver fails, MGRC-PDF stays open, shows what went wrong, and records it in pdfcraft.log.
+
 ## [0.2.0] - 2026-10-19
 
 ### Fixed

@@ -24,6 +24,8 @@ pub mod range;
 pub mod spool;
 #[cfg(test)]
 mod tests;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod worker;
 
 pub use range::{Subset, select_listed, select_pages};
 
