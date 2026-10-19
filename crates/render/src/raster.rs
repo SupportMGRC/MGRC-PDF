@@ -5979,6 +5979,53 @@ endstream endobj
         assert_eq!(rgb_at(&out.rgba, w, 100, 35), [255, 0, 0]);
     }
 
+    /// One line of text in an embedded TrueType font (`font`), with its `head.indexToLocFormat`
+    /// set to `loca_format` when given.
+    fn truetype_line(font: &[u8], loca_format: Option<u16>) -> Vec<u8> {
+        use lopdf::{Document, Object, Stream, dictionary};
+        let mut program = font.to_vec();
+        if let Some(value) = loca_format {
+            let tables = u16::from_be_bytes([program[4], program[5]]) as usize;
+            let head = (0..tables)
+                .map(|i| 12 + i * 16)
+                .find(|&rec| &program[rec..rec + 4] == b"head")
+                .map(|rec| u32::from_be_bytes([program[rec + 8], program[rec + 9], program[rec + 10], program[rec + 11]]) as usize)
+                .expect("head table");
+            program[head + 50..head + 52].copy_from_slice(&value.to_be_bytes());
+        }
+        let mut doc = Document::with_version("1.7");
+        let program = doc.add_object(Stream::new(dictionary! {}, program));
+        let descriptor = doc.add_object(dictionary! { "Type" => "FontDescriptor", "FontName" => "Test", "Flags" => 32, "FontFile2" => program });
+        let font = doc.add_object(dictionary! { "Type" => "Font", "Subtype" => "TrueType", "BaseFont" => "Test", "Encoding" => "WinAnsiEncoding", "FontDescriptor" => descriptor });
+        let content = doc.add_object(Stream::new(dictionary! {}, b"BT /F1 28 Tf 10 20 Td (Invoice J730648) Tj ET".to_vec()));
+        let pages = doc.new_object_id();
+        let page = doc.add_object(dictionary! { "Type" => "Page", "Parent" => pages, "MediaBox" => vec![Object::Integer(0), Object::Integer(0), Object::Integer(300), Object::Integer(60)], "Resources" => dictionary! {"Font" => dictionary! {"F1" => font}}, "Contents" => content });
+        doc.objects.insert(pages, dictionary! {"Type" => "Pages", "Kids" => vec![Object::Reference(page)], "Count" => 1}.into());
+        let catalog = doc.add_object(dictionary! {"Type" => "Catalog", "Pages" => pages});
+        doc.trailer.set("Root", catalog);
+        let mut bytes = Vec::new();
+        doc.save_to(&mut bytes).unwrap();
+        bytes
+    }
+
+    /// Vendored hayro-interpret patch `repair_loca_format`: a font whose `head.indexToLocFormat`
+    /// is neither 0 nor 1 (Datalogics-made invoices embed Arial with 256) drew every glyph as an
+    /// empty box. Its real format is read from the size of `loca`, for long and short offsets.
+    #[test]
+    fn fonts_with_an_invalid_loca_format_still_draw() {
+        let long = include_bytes!("../../../assets/fonts/Inter-Regular.ttf");
+        let short = include_bytes!("../../../assets/fonts/DancingScript.ttf");
+        for (name, font) in [("long loca", &long[..]), ("short loca", &short[..])] {
+            let good = render_first_page(truetype_line(font, None));
+            let inked = good.rgba.chunks(4).filter(|p| p[3] > 0 && p[0] < 128).count();
+            assert!(inked > 200, "{name}: the reference line draws ({inked} dark pixels)");
+            for value in [256, 2, 0xFFFF] {
+                let fixed = render_first_page(truetype_line(font, Some(value)));
+                assert!(fixed.rgba[..] == good.rgba[..], "{name}, indexToLocFormat {value}: drawn as with a valid header");
+            }
+        }
+    }
+
     /// Render `pdf`'s first page at 72 dpi with no time limit beyond the test's own.
     fn render_first_page(pdf: Vec<u8>) -> RenderedPage {
         let mut r = PageRenderer::new(Arc::new(pdf), RenderConfig::default());
