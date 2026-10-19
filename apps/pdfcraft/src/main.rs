@@ -168,6 +168,17 @@ fn rejoin_split_paths(args: Vec<String>, exists: impl Fn(&str) -> bool) -> Vec<S
 }
 
 fn main() -> eframe::Result {
+    // `selfpdf --print-worker <job folder>`: spool one print job and exit (Windows). Checked before
+    // the logger, single-instance or window start: the worker shows nothing and must not rotate the
+    // log of the app that started it (pdfcraft_print::worker).
+    {
+        let mut args = std::env::args_os().skip(1);
+        if args.next().is_some_and(|a| a == pdfcraft_engine::print::spool::WORKER_FLAG)
+            && let Some(dir) = args.next()
+        {
+            std::process::exit(pdfcraft_engine::print::spool::run_worker(std::path::Path::new(&dir)));
+        }
+    }
     // First, so the panic hook and every start-up warning are recorded (`logging`).
     let logger = logging::install();
     // Last-resort guard (AGENTS.md §4): commands, edits, opens and saves catch panics and report

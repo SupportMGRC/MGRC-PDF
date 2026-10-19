@@ -65,6 +65,11 @@ pub fn submit_with_progress(pdf: &[u8], job: &Job, progress: &mut dyn FnMut(usiz
     craft_print::submit_with_progress(pdf, job, progress).map_err(|e| crate::PrintError::Spool(e.to_string()))
 }
 
+/// [`submit_with_progress`], in a separate process on Windows so a crash in the printer driver
+/// can't close the app ([`crate::worker`]).
+#[cfg(not(target_arch = "wasm32"))]
+pub use crate::worker::{WORKER_FLAG, run_worker, submit_isolated};
+
 pub fn open_printer_preferences(printer: &str) -> Result<(), crate::PrintError> {
     craft_print::open_printer_preferences(printer).map_err(|e| crate::PrintError::Spool(e.to_string()))
 }

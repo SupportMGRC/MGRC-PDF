@@ -537,11 +537,15 @@ impl PdfCraftApp {
                     ctx.request_repaint();
                 }
             };
-            // The receiver may be gone (the app quit): nothing to report to then.
-            let result = spool::submit_with_progress(&bytes, &job, &mut |sent, sheets| {
+            // The receiver may be gone (the app quit): nothing to report to then. On Windows the
+            // job runs in a worker process, so a printer driver that crashes can't close the app.
+            let result = spool::submit_isolated(&bytes, &job, &mut |sent, sheets| {
                 let _ = tx.send(JobNews::Sent(sent, sheets));
                 repaint();
             });
+            if let Err(e) = &result {
+                log::error!("printing {:?} to {:?} failed: {e}", job.title, job.printer.as_deref().unwrap_or("the default printer"));
+            }
             let _ = tx.send(JobNews::Done(result.map_err(|e| e.to_string())));
             repaint();
         });
