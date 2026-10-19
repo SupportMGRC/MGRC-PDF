@@ -1,5 +1,5 @@
 //! `selfpdf-cli.exe` carries a Windows version resource (`build.rs`), so Explorer, PowerShell's
-//! `VersionInfo` and inventory tools see its version and publisher, as they do for `pdfcraft.exe`.
+//! `VersionInfo` and inventory tools see its version and publisher, as they do for `selfpdf.exe`.
 
 #![cfg(windows)]
 
