@@ -5,6 +5,8 @@ licence files unchanged. Every patch is marked `PdfCraft patch:` in the source, 
 PdfCraft test, and should be proposed upstream. Remove the vendored copy once upstream releases
 the fix. Vendoring copyleft code is never allowed (plan/adr/0001).
 
+An MGRC-PDF patch in `hayro-interpret` (`font/blob.rs`, `repair_loca_format`) repairs an embedded TrueType/OpenType font whose `head.indexToLocFormat` is neither 0 nor 1 (seen in Datalogics-produced invoices embedding Arial subsets with 256), reading the real format from the size of `loca`; without it skrifa read the offsets as short and every glyph drew as an empty box. Covered by `pdfcraft-render` `raster::tests::fonts_with_an_invalid_loca_format_still_draw` (long and short `loca`; values 2, 256 and 0xFFFF).
+
 A PdfCraft patch in `hayro-syntax::Page::base_dimensions` expresses the existing one-point floor as a raw reciprocal of `/UserUnit`, rounded upward only when f32 multiplication would fall below one point. Five `pdfcraft-render` regressions with prefix `raster::tests::raw_crop_` cover the observed dimensions, origins and rotations, units 41/47, bounded vector rasters and unchanged nearly-zero A4 fallback. Accepted page-unit policy and licences are unchanged.
 
 | Crate | Version | Licence | Patches | Test |

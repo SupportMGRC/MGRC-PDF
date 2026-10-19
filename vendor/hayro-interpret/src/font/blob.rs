@@ -175,6 +175,9 @@ impl Debug for OpenTypeFontBlob {
 
 impl OpenTypeFontBlob {
     pub(crate) fn new(data: FontData, index: u32) -> Option<Self> {
+        // PdfCraft patch: repair an invalid `head.indexToLocFormat` before parsing (see
+        // `repair_loca_format`).
+        let data = if index == 0 { repair_loca_format(data) } else { data };
         // Check first whether the font is valid so we can unwrap in the closure.
         let f = FontRef::from_index(data.as_ref().as_ref(), index).ok()?;
         // Reject fonts with invalid post table version, fixes pdf.js issue 9462. Not sure if there
@@ -333,3 +336,69 @@ struct CFFYoke<'a> {
     charset: Option<Charset<'a>>,
     subfonts: Vec<Subfont>,
 }
+
+/// PdfCraft patch: `head.indexToLocFormat` must be 0 (short `loca` offsets) or 1 (long), but some
+/// PDF producers write other values (Datalogics-made invoices embed Arial subsets with 256).
+/// skrifa reads anything but 1 as short, so every glyph comes out empty or garbled and the text
+/// shows as boxes; FreeType, pdf.js and Acrobat read such fonts. Work out the real format from
+/// the size of `loca` (one entry more than there are glyphs, 2 or 4 bytes each) and patch a copy.
+/// Fonts with a valid value, collections and anything unreadable are returned unchanged.
+/// Covered by `pdfcraft-render` `raster::tests::fonts_with_an_invalid_loca_format_still_draw`.
+pub(crate) fn repair_loca_format(data: FontData) -> FontData {
+    match loca_format_fix(data.as_ref().as_ref()) {
+        Some((offset, format)) => {
+            let mut bytes = data.as_ref().as_ref().to_vec();
+            match bytes.get_mut(offset..offset + 2) {
+                Some(field) => {
+                    field.copy_from_slice(&format.to_be_bytes());
+                    Arc::new(bytes)
+                }
+                None => data,
+            }
+        }
+        None => data,
+    }
+}
+
+/// Where `head.indexToLocFormat` is and what it should be, when it is invalid and `loca`'s size
+/// says which format the font really uses.
+fn loca_format_fix(b: &[u8]) -> Option<(usize, u16)> {
+    let u16_at = |at: usize| b.get(at..at.checked_add(2)?).map(|s| u16::from_be_bytes([s[0], s[1]]));
+    let u32_at = |at: usize| b.get(at..at.checked_add(4)?).map(|s| u32::from_be_bytes([s[0], s[1], s[2], s[3]]));
+    // A single sfnt (TrueType outlines or OpenType), not a collection.
+    let tag = u32_at(0)?;
+    if tag != 0x0001_0000 && b.get(0..4)? != b"true" {
+        return None;
+    }
+    let tables = usize::from(u16_at(4)?);
+    let (mut head, mut maxp, mut loca_len) = (None, None, None);
+    for i in 0..tables.min(256) {
+        let rec = 12usize.checked_add(i.checked_mul(16)?)?;
+        let name = b.get(rec..rec.checked_add(4)?)?;
+        let offset = usize::try_from(u32_at(rec.checked_add(8)?)?).ok()?;
+        let length = usize::try_from(u32_at(rec.checked_add(12)?)?).ok()?;
+        match name {
+            b"head" => head = Some(offset),
+            b"maxp" => maxp = Some(offset),
+            b"loca" => loca_len = Some(length),
+            _ => {}
+        }
+    }
+    let field = head?.checked_add(50)?;
+    let current = u16_at(field)?;
+    if current <= 1 {
+        return None;
+    }
+    let glyphs = usize::from(u16_at(maxp?.checked_add(4)?)?);
+    let entries = glyphs.checked_add(1)?;
+    let loca_len = loca_len?;
+    let format = if loca_len >= entries.checked_mul(4)? {
+        1
+    } else if loca_len >= entries.checked_mul(2)? {
+        0
+    } else {
+        return None;
+    };
+    Some((field, format))
+}
+
