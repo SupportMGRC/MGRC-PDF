@@ -76,6 +76,6 @@ fn about_dialog_has_contributors_and_models_tabs() {
     // MGRC-PDF builds without a contributor list (`contributors/` is not shipped): the tab says so.
     settled(&mut h, "No contributor data was built into this copy.");
     settled(&mut h, "Models").click();
-    h.run_steps(4);
-    assert!(h.query_all_by_label("Anthropic").count() >= 1);
+    // Likewise no model-credit list is built in, so the Models tab says so instead of listing models.
+    settled(&mut h, "No model credits were built into this copy.");
 }
