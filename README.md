@@ -107,6 +107,10 @@ run `selfpdf.exe`. Settings stay in a folder next to the program.
   right-click it to choose. *System* follows Windows.
 - **Interface language:** **Menu → Edit → Preferences… → Interface language** (`Ctrl+,`).
 - **Keyboard shortcuts:** the **?** icon at the top right.
+- **Updates:** at start-up MGRC-PDF asks GitHub once whether a newer version exists (no personal
+  data or documents are sent). If there is one, a bar offers **Download**, which opens the release
+  page; installing needs an administrator, so ask IT if Windows asks for a password.
+  **Help ▸ Check for updates** asks at any time.
 
 Where MGRC-PDF keeps its files on Windows:
 

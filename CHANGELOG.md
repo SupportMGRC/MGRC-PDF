@@ -2,6 +2,78 @@
 
 All notable changes to MGRC-PDF are listed here. Versions follow MAJOR.MINOR.PATCH.
 
+## [0.3.0] - 2026-10-26
+
+This release brings in a week of improvements from the open-source project MGRC-PDF is based
+on (its changes from 19 to 25 October 2026), with MGRC branding kept throughout.
+
+### Added
+- **Update notice:** when MGRC-PDF starts, it checks once, quietly, for a newer MGRC-PDF release.
+  If there is one, a bar under the mode bar says so, with **Download** (opens the release page)
+  and **Later** (hides the bar until the next start). Installing needs an administrator on MGRC's
+  PCs, so the bar says to ask IT if Windows asks for a password. Nothing shows when MGRC-PDF is
+  up to date or offline, and nothing is downloaded or installed automatically.
+- **Pages:** Extract pages takes typed page ranges; **Split document…** on
+  the page thumbnails' right-click menu; a **Page tools** menu in the Pages panel; an optional
+  gapless continuous page display; Full screen shows one fitted page at a time.
+- **Editing:** paste a picture from the clipboard with Ctrl+V; drag to size a new text box; text
+  boxes and callouts can have a fill and border width; page images rotate by any angle; Delete
+  removes the selected paragraph or objects.
+- **Header & Footer:** Times and Courier fonts, an option to shrink the page content out of the
+  way, and previews that step through the pages (also for watermarks).
+- **Comments:** flatten comments from the page's right-click menu or the Comments panel; arrow
+  keys move the selected comment; drag a line's ends or a polygon's corners; the reply count
+  shows under the Comments header.
+- **Forms:** **Prepare a form ▸ Calculation order** (check and fix the order fields calculate
+  in) and **Text field table**; nudge a field with the arrow keys; a **Today** button in the date
+  picker; field tooltips on hover; editable drop-down lists accept a typed value; Tab and Space
+  reach check boxes and radio buttons.
+- **Document Properties:** a **Custom** tab for custom properties and a **Space Audit** tab;
+  title and author stored only in XMP metadata now show.
+- **Attachments:** attach a file to a document and delete one; open an attachment by
+  double-click.
+- **Bookmarks:** title colour and style; a new bookmark goes to the page you are on.
+- **Layers:** Reset to Initial Visibility.
+- **Measure:** type or pick an architect's drawing scale (1:50, 1:100 …).
+- **All tools** opens as a full, searchable view that also finds menu commands.
+- **Printing:** remembers the printer and paper size; printer driver options in the interface
+  language; the US #10 envelope paper size; two-sided printing starts at the printer's own default;
+  Print is unavailable on documents whose security forbids printing.
+- **PDF Optimizer:** choose the target PDF version and object streams; remove PDF/A or PDF/X
+  identification.
+- **Compare** can filter text changes and visual differences.
+- **Preferences:** always use my default zoom and page layout; restore the last view when
+  reopening a document; field highlights on by default, with a toggle in Appearance.
+- **12 new interface languages:** Albanian, Catalan, Central Kurdish, Finnish, Hindi,
+  Indonesian, Korean, Lao, Norwegian Bokmål, Persian, Romanian and Thai.
+
+### Improved
+- Opening a file that is already open switches to its tab, and the running MGRC-PDF window comes
+  to the front when another file is opened.
+- Documents open at their own starting page and position, if they set one.
+- Save As and export dialogs open in the document's own folder.
+- Editing text keeps every space you type and keeps the original styling more reliably.
+- Signatures: visible signatures read upright on rotated pages; certificate and time-stamp checks
+  are stricter; only certificates that may sign documents are offered from the Windows store.
+- Redaction also clears image pixels under the marks, follows nested content more thoroughly, and
+  is applied on a copy, so a failure leaves the document as it was.
+- Values typed into password fields are never written to any file.
+- Word export keeps the page background colour and italic text in its paragraph.
+- Large forms (XFA) with thousands of fields open in seconds; many XFA layout and date fixes.
+- Many drawing fixes: fonts, colour spaces, transparency, shadings and patterns, check boxes and
+  sticky notes without appearances, and Korean or Hebrew file names in tabs.
+- Damaged or hostile PDFs are now held to strict limits on memory and time throughout, so they
+  can't freeze or crash the app.
+
+### Changed
+- The interface library was updated to a newer version (egui 0.37).
+- The mode bar no longer has a separate Read tab, matching Acrobat.
+- Windows **Settings ▸ Apps** now shows MGRC-PDF's GitHub page as its support and update link
+  (previously the original project's website).
+
+### Upgrading
+- Install `selfpdf-0.3.0-windows-x64.msi` over v0.2.x; it upgrades in place and keeps settings.
+
 ## [0.2.1] - 2026-10-19
 
 ### Fixed

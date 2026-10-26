@@ -48,6 +48,7 @@ modules:
     build-commands:
       - cargo --offline build --release --locked -p pdfcraft
       - install -Dm755 target/release/selfpdf /app/bin/selfpdf
+      - install -Dm644 NOTICE /app/share/doc/pdfcraft/NOTICE
       - install -Dm644 packaging/linux/selfpdf.desktop /app/share/applications/selfpdf.desktop
       - install -Dm644 packaging/linux/selfpdf.mime.xml /app/share/mime/packages/selfpdf.xml
       - mkdir -p /app/share/icons && cp -R assets/app-icon/hicolor /app/share/icons/

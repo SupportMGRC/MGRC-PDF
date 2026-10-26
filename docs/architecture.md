@@ -95,7 +95,10 @@ Every user-facing feature is reachable headlessly (`AGENTS.md` §3):
 
 ## Build and quality gates
 
-`cargo xtask ci` runs fmt, clippy (`-D warnings`), tests, the layering check, the WASM check,
+`cargo xtask ci` runs fmt, clippy (`-D warnings`), a check of `selfpdf-cli` without default
+features, the tests (`xtask test`: cargo-nextest when installed, else `cargo test`, then the
+doctests), `xtask i18n-report` (the strings each interface language has no translation for; it
+never fails), the layering check, the WASM check (one `cargo check` over every crate below L8),
 `xtask assets` (asset licences and hashes), `xtask parity` (checklist claims must cite real commands,
 tools and tests) and `xtask deny` (dependency licences). Other tasks: `xtask fuzz`, `xtask corpus` and `xtask check` (robustness
 sweep over the pinned pdf.js corpus), `xtask text-oracle` (word F1 and reading order against `pdftotext`),

@@ -12,6 +12,9 @@
   MGRC-PDF arrive on its command line.
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <?ifndef HasCraftFontLicences ?>
+  <?define HasCraftFontLicences=0 ?>
+  <?endif ?>
   <Package
       Name="MGRC-PDF"
       Manufacturer="Malaysian Genomics Resource Centre Berhad"
@@ -35,8 +38,8 @@
          Add/Remove Programs show a blank icon (#57). -->
     <Icon Id="PdfcraftIcon.ico" SourceFile="$(var.IconPath)" />
     <Property Id="ARPPRODUCTICON" Value="PdfcraftIcon.ico" />
-    <Property Id="ARPURLINFOABOUT" Value="https://getartcraft.com/apps/pdfcraft" />
-    <Property Id="ARPURLUPDATEINFO" Value="https://getartcraft.com/apps/pdfcraft" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/SupportMGRC/MGRC-PDF" />
+    <Property Id="ARPURLUPDATEINFO" Value="https://github.com/SupportMGRC/MGRC-PDF" />
     <Property Id="ARPHELPLINK" Value="https://www.mgrc.com.my" />
     <!-- Desktop shortcut (#143): on by default for a first install, a checkbox in the full-UI
          welcome dialog, and INSTALLDESKTOPSHORTCUT=0 on the msiexec command line for unattended
@@ -88,12 +91,20 @@
     <StandardDirectory Id="DesktopFolder" />
 
     <Feature Id="Main" Title="MGRC-PDF" Level="1">
+      <?if $(var.HasCraftFontLicences) = 1 ?>
+      <ComponentGroupRef Id="CraftFontLicences" />
+      <?endif ?>
       <ComponentGroupRef Id="PdfcraftFiles" />
       <ComponentGroupRef Id="PdfcraftModels" />
     </Feature>
   </Package>
 
   <Fragment>
+    <?if $(var.HasCraftFontLicences) = 1 ?>
+    <ComponentGroup Id="CraftFontLicences" Directory="INSTALLFOLDER">
+      <Files Include="$(var.DocsDir)\**" />
+    </ComponentGroup>
+    <?endif ?>
     <ComponentGroup Id="PdfcraftFiles" Directory="INSTALLFOLDER">
       <Component Id="PdfcraftApp" Guid="393EF3F3-10E6-49F7-BFCA-0E70F5B98516">
         <File Id="PdfcraftExe" Source="$(var.BinDir)\selfpdf.exe" KeyPath="yes" />

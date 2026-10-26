@@ -3,7 +3,11 @@
 //! The desktop app supplies how to ask ([`PdfCraftApp::update_source`]), so this crate has no
 //! network code; without a source (the web build, tests) the command opens the releases page.
 //! MGRC-PDF never downloads or installs anything itself: the user downloads the new version.
-//! It asks only when the user does: there is no check at start (the owner's decision).
+//!
+//! The desktop app also asks once, quietly, at start-up ([`PdfCraftApp::check_updates_at_start`]):
+//! when a newer release exists, a bar under the mode bar offers its download page. Nothing shows
+//! when MGRC-PDF is up to date or GitHub can't be reached. Installing needs an administrator on
+//! MGRC's PCs, so the bar says to ask IT if Windows asks for a password.
 
 use std::sync::Arc;
 
@@ -60,6 +64,14 @@ pub(crate) struct Updates {
     pub(crate) check: Check,
     /// The Updates dialog is showing.
     pub(crate) open: bool,
+    /// The quiet start-up check, kept apart from the dialog's so neither shows the other's result.
+    #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
+    pub(crate) startup: Check,
+    /// The start-up check has been started (it runs once per launch).
+    #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
+    pub(crate) startup_started: bool,
+    /// A newer release the start-up check found; the update bar shows it until Download or Later.
+    pub(crate) available: Option<Release>,
 }
 
 impl PdfCraftApp {
@@ -75,16 +87,7 @@ impl PdfCraftApp {
             if matches!(self.updates.check, Check::Running(_)) {
                 return;
             }
-            let (tx, rx) = std::sync::mpsc::channel();
-            let ctx = self.ctx.clone();
-            std::thread::spawn(move || {
-                // The receiver may be gone (the app quit): nothing to report to then.
-                let _ = tx.send(source());
-                if let Some(ctx) = ctx {
-                    ctx.request_repaint();
-                }
-            });
-            self.updates.check = Check::Running(rx);
+            self.updates.check = Check::Running(spawn_check(source, self.ctx.clone()));
         }
         #[cfg(target_arch = "wasm32")]
         {
@@ -93,17 +96,92 @@ impl PdfCraftApp {
         }
     }
 
-    /// Pick up a finished check (each frame).
+    /// Pick up a finished check (each frame), and start the start-up check on the first frame.
     pub(crate) fn poll_updates(&mut self) {
         #[cfg(not(target_arch = "wasm32"))]
-        if let Check::Running(rx) = &self.updates.check {
-            let result = match rx.try_recv() {
-                Ok(r) => r,
-                Err(std::sync::mpsc::TryRecvError::Empty) => return,
-                Err(std::sync::mpsc::TryRecvError::Disconnected) => Err("the update check stopped unexpectedly".into()),
-            };
-            self.updates.check = Check::Done(result);
+        {
+            if self.check_updates_at_start && !self.updates.startup_started {
+                self.updates.startup_started = true;
+                if let Some(source) = self.update_source.clone() {
+                    self.updates.startup = Check::Running(spawn_check(source, self.ctx.clone()));
+                }
+            }
+            if let Some(result) = take_finished(&mut self.updates.check) {
+                self.updates.check = Check::Done(result);
+            }
+            if let Some(result) = take_finished(&mut self.updates.startup) {
+                // Quiet: only a newer release is worth a bar; up to date or offline shows nothing.
+                if let Ok(release) = result
+                    && is_newer(&release.version, env!("CARGO_PKG_VERSION"))
+                {
+                    self.updates.available = Some(release);
+                }
+            }
         }
+    }
+}
+
+/// Run `source` on its own thread; the receiver gets its answer, and `ctx` is woken to show it.
+#[cfg(not(target_arch = "wasm32"))]
+fn spawn_check(source: UpdateSource, ctx: Option<egui::Context>) -> std::sync::mpsc::Receiver<Result<Release, String>> {
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        // The receiver may be gone (the app quit): nothing to report to then.
+        let _ = tx.send(source());
+        if let Some(ctx) = ctx {
+            ctx.request_repaint();
+        }
+    });
+    rx
+}
+
+/// The answer of a running check once it has one (the check then goes back to idle).
+#[cfg(not(target_arch = "wasm32"))]
+fn take_finished(check: &mut Check) -> Option<Result<Release, String>> {
+    let Check::Running(rx) = check else { return None };
+    let result = match rx.try_recv() {
+        Ok(r) => r,
+        Err(std::sync::mpsc::TryRecvError::Empty) => return None,
+        Err(std::sync::mpsc::TryRecvError::Disconnected) => Err("the update check stopped unexpectedly".into()),
+    };
+    *check = Check::Idle;
+    Some(result)
+}
+
+/// The update bar under the mode bar: shown when the start-up check found a newer release.
+/// Download opens that release's page; Later hides the bar until the next launch.
+pub(crate) fn bar(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
+    let Some(release) = app.updates.available.clone() else { return };
+    let t = theme::Tokens::get(ui.ctx());
+    let version = release.version.trim_start_matches(['v', 'V']);
+    let text = crate::i18n::fmt(
+        tl!("MGRC-PDF {v} is available. Download it from the release page; if Windows asks for an administrator password, ask IT to enter it."),
+        &[("v", version)],
+    );
+    let (mut download, mut later) = (false, false);
+    egui::Panel::top("update_bar").frame(egui::Frame::NONE.fill(t.accent_soft).inner_margin(egui::Margin::symmetric(14, 7))).show(ui, |ui| {
+        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+            later = widgets::pill_button(ui, tl!("Later"), false).clicked();
+            download = widgets::pill_button(ui, tl!("Download"), true).clicked();
+            ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                ui.add(crate::icons::image("cloud", 16.0, t.accent_text));
+                let label = egui::Label::new(egui::RichText::new(text).color(t.text));
+                ui.add(if ui.available_width() >= 120.0 { label.wrap() } else { label.truncate() });
+            });
+        });
+    });
+    if download || later {
+        app.updates.available = None;
+    }
+    if download {
+        app.open_url(&release.url);
+    }
+}
+
+impl PdfCraftApp {
+    /// The release the start-up check found newer than this version, while the bar shows it.
+    pub fn update_available(&self) -> Option<&Release> {
+        self.updates.available.as_ref()
     }
 }
 

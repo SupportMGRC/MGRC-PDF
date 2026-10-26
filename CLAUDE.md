@@ -29,6 +29,9 @@ app ID is `selfpdf`. Windows is the primary target for MGRC staff.
   copy GPL/AGPL code, and never read or copy anything from inside Adobe products.
 - **Layering.** The engine crates never depend on the UI (egui, winit, eframe, rfd). `cos`,
   `filters` and `crypt` stay standalone. `cargo xtask layers` checks this.
+- **Page input.** Page modules read `PagePointer` (`crates/ui-egui/src/page_pointer.rs`), never
+  egui's raw pointer state; `page_pointer::tests::page_modules_read_the_pointer_only_through_page_pointer`
+  enforces it.
 - **Fidelity.** The PDF object graph is the model. Preserve unknown data. Saves are incremental
   unless a full rewrite is required. Never silently drop or repair data without recording it.
 - **Never panic.** Every PDF, script, settings file and keystroke is untrusted input. Return
@@ -39,6 +42,8 @@ app ID is `selfpdf`. Windows is the primary target for MGRC staff.
   - cap allocations sized by input; bound recursion;
   - no `unsafe` (`unsafe_code = "forbid"`).
   Every crash fix gets a small synthetic regression test (see `AGENTS.md` §4).
+- **Time goes through `chrono`** (workspace dependency). Never hand-roll UTC or calendar
+  conversion; a crate owns only its output format string.
 - **Rust only** in the product and build tooling (`xtask`).
 
 ## Quality checks
