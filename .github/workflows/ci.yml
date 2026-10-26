@@ -30,18 +30,19 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # The optional craft-fonts build input (Japanese fonts), so the Japanese font tests run on
-      # Linux; Windows tests the build without it. See craftrules standards/fonts.md.
-      - name: Check out craft-fonts (Linux)
-        if: runner.os == 'Linux'
+      # The optional craft-fonts build input (Japanese, Chinese, Thai and other faces), on both
+      # Linux and Windows: the UI tests run with egui_kittest, which fails a test on any character
+      # no font can draw (the app itself draws a box instead), and the CI runners have no such
+      # system fonts.
+      - name: Check out craft-fonts
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: storytold/craft-fonts
           ref: b076417b5880bd4154bd22f00695b1d28c6bea83
           path: craft-fonts
 
-      - name: Configure craft-fonts (Linux)
-        if: runner.os == 'Linux'
+      - name: Configure craft-fonts
+        shell: bash
         run: |
           echo "CRAFT_FONTS_DIR=$GITHUB_WORKSPACE/craft-fonts" >> "$GITHUB_ENV"
           echo "CRAFT_FONTS_REQUIRED=1" >> "$GITHUB_ENV"
