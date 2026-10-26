@@ -71,14 +71,6 @@ on (its changes from 19 to 25 October 2026), with MGRC branding kept throughout.
 - Windows **Settings ▸ Apps** now shows MGRC-PDF's GitHub page as its support and update link
   (previously the original project's website).
 
-### Not included from upstream
-- The original project's new automatic updater (downloads and installs new versions by itself) is
-  left out: it requires code-signed installers, staff accounts can't install without an
-  administrator, and it would otherwise offer the original project's releases. MGRC-PDF shows its
-  own update notice instead (above), and **Help ▸ Check for updates** works as before.
-- Its SonarCloud and CodeRabbit integrations and its shared CI workflow are left out; MGRC-PDF's
-  own CI runs every check itself. Nightly fuzzing now has its own workflow (`fuzz.yml`).
-
 ### Upgrading
 - Install `selfpdf-0.3.0-windows-x64.msi` over v0.2.x; it upgrades in place and keeps settings.
 
