@@ -45,10 +45,6 @@ pub fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                             ui.label(egui::RichText::new("MGRC-PDF").font(theme::semibold(15.0)));
                             ui.label(egui::RichText::new("PDF workbench for Malaysian Genomics Resource Centre Berhad").color(t.text_muted));
                         });
-                        ui.add_space(8.0);
-                        if let Some(cmd) = widgets::community_links(ui) {
-                            app.execute(cmd);
-                        }
                     });
                 });
             ui.add_space(22.0);
