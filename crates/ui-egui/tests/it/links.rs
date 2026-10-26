@@ -21,6 +21,7 @@ fn home_screen_shows_the_company_logo() {
     let h = harness(|_| {});
     h.get_by_label("Malaysian Genomics Resource Centre");
     h.get_by_label("Developed and maintained by Noor");
+    assert!(h.query_by_label("MGRC-PDF on GitHub").is_none(), "the home screen has no GitHub button");
 }
 
 #[test]
