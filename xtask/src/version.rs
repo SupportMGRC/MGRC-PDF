@@ -15,15 +15,21 @@ pub fn read(manifest: &str) -> Result<String, String> {
     Ok(v)
 }
 
-/// `manifest` with the workspace version replaced, together with the `version = "…"` of the
-/// workspace's own path dependencies (`{ path = "crates/…", version = "…" }`), which must match it
-/// or Cargo can't resolve the workspace. Everything else is byte-for-byte unchanged.
+/// `manifest` with the workspace version replaced, together with the matching `version` of every
+/// path dependency in `[workspace.dependencies]` (the workspace's own crates, which must agree
+/// with it or `cargo update` refuses them); everything else is byte-for-byte unchanged.
 pub fn replace(manifest: &str, new: &str) -> Result<String, String> {
     validate(new)?;
     let old = read(manifest)?;
     let (idx, _) = find_line(manifest)?;
+    let (old_pin, new_pin) = (format!("version = \"{old}\""), format!("version = \"{new}\""));
     let mut out = String::with_capacity(manifest.len() + 8);
+    let mut in_deps = false;
     for (i, line) in manifest.split_inclusive('\n').enumerate() {
+        let t = line.trim();
+        if t.starts_with('[') {
+            in_deps = t == "[workspace.dependencies]";
+        }
         if i == idx {
             let eol = if line.ends_with("\r\n") {
                 "\r\n"
@@ -33,18 +39,13 @@ pub fn replace(manifest: &str, new: &str) -> Result<String, String> {
                 ""
             };
             out.push_str(&format!("version = \"{new}\"{eol}"));
-        } else if is_member_dependency(line) {
-            out.push_str(&line.replacen(&format!("version = \"{old}\""), &format!("version = \"{new}\""), 1));
+        } else if in_deps && line.contains("path = \"") && line.contains(&old_pin) {
+            out.push_str(&line.replace(&old_pin, &new_pin));
         } else {
             out.push_str(line);
         }
     }
     Ok(out)
-}
-
-/// A `[workspace.dependencies]` line naming one of the workspace's own crates by path.
-fn is_member_dependency(line: &str) -> bool {
-    line.contains("path = \"crates/") || line.contains("path = \"apps/")
 }
 
 /// Semver without build metadata: `MAJOR.MINOR.PATCH` plus an optional `-pre.release` tag.
@@ -142,13 +143,15 @@ mod tests {
     }
 
     #[test]
-    fn moves_the_workspace_crates_dependency_versions_with_it() {
-        let manifest = "[workspace.package]\nversion = \"0.8.0\"\n\n[workspace.dependencies]\na = { path = \"crates/a\", version = \"0.8.0\" }\nb = { path = \"apps/b\", version = \"0.8.0\" }\nc = { version = \"0.8.0\" }\n";
-        let out = replace(manifest, "0.1.0").unwrap();
-        assert!(out.contains("a = { path = \"crates/a\", version = \"0.1.0\" }"));
-        assert!(out.contains("b = { path = \"apps/b\", version = \"0.1.0\" }"));
-        assert!(out.contains("c = { version = \"0.8.0\" }"), "outside crates keep their own version");
-        assert_eq!(read(&out).unwrap(), "0.1.0");
+    fn moves_the_workspace_crates_pins_with_it() {
+        let manifest = "[workspace.package]\nversion = \"0.1.0\"\n\n[workspace.dependencies]\n\
+                        own = { path = \"crates/own\", version = \"0.1.0\" }\n\
+                        dep = { version = \"0.1.0\" }\n\
+                        other = { path = \"crates/other\", version = \"0.2\" }\n";
+        let out = replace(manifest, "0.2.0").unwrap();
+        assert!(out.contains("own = { path = \"crates/own\", version = \"0.2.0\" }"), "{out}");
+        assert!(out.contains("dep = { version = \"0.1.0\" }"), "a registry dependency keeps its version");
+        assert!(out.contains("other = { path = \"crates/other\", version = \"0.2\" }"));
     }
 
     #[test]

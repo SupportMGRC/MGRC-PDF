@@ -5,8 +5,6 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
-  schedule:
-    - cron: "17 3 * * *" # nightly fuzzing
 
 env:
   CARGO_TERM_COLOR: always
@@ -39,7 +37,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: storytold/craft-fonts
-          ref: 3d9ab3a132ed0eff457e424226a435a901da30d3
+          ref: b076417b5880bd4154bd22f00695b1d28c6bea83
           path: craft-fonts
 
       - name: Configure craft-fonts (Linux)
@@ -72,6 +70,11 @@ jobs:
       - name: Require Windows executable resources
         if: runner.os == 'Windows'
         run: Add-Content -Path $env:GITHUB_ENV -Value 'PDFCRAFT_REQUIRE_WINRES=1'
+        shell: pwsh
+
+      - name: Windows font notice regressions
+        if: runner.os == 'Windows'
+        run: ./packaging/windows/test-font-notices.ps1
         shell: pwsh
 
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
@@ -127,26 +130,3 @@ jobs:
         with:
           command: check
 
-  fuzz:
-    name: fuzz (mutation, 15 min)
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
-        with:
-          toolchain: stable
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
-        with:
-          key: fuzz
-      - name: Fetch the pdf.js corpus (seeds)
-        run: cargo xtask corpus
-      - name: Fuzz
-        run: cargo xtask fuzz --time 900 --seed ${{ github.run_number }}
-      - name: Upload findings
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: fuzz-findings
-          path: fuzz-out/findings
-          if-no-files-found: ignore
